@@ -16,6 +16,7 @@ module Rack
         port: (ENV['FLUENTD_PORT'] || 24_224).to_i,
         json_parser: ->(str) { JSON.parse(str) },
         preprocessor: ->(d) { d },
+        exception_handler: ->(err) { Rails.logger.error(err) }
         max_body_non_json: 256
       )
         @logger = Fluent::Logger::FluentLogger.new(name, host: host, port: port)
@@ -53,6 +54,8 @@ module Rack
 
         self.class.logger.post('rack-traffic-log', record)
       end
+    rescue => exception
+      self.class.exception_handler&.call(exception)
     end
 
     def format_response(response)
